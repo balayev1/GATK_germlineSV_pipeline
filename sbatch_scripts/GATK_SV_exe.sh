@@ -5,11 +5,11 @@
 
 #### User-defined parameters (Change these as needed) ####
 module load java/openjdk-17.0.2
+export CROMWELL_CONFIG="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/cromwell.conf"
 export CROMWELL_EXE="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/cromwell-91.jar"
 export MANIFEST="/projects/standard/venteicher_30050/balay011/gatk-sv/gatk-sv-manifest.tsv"
 export OUTPUT_DIR="/scratch.global/balay011/gatk_sv_output"
 export GatherSampleEvidence_WDL="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/GatherSampleEvidence.wdl"
-export EvidenceQC_WDL="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/EvidenceQC.wdl"
 export DEPS_ZIP="/users/1/balay011/helper_scripts/gatk_sv_cromwell_scripts/gatk-sv-deps.zip"
 
 #### Step I: GatherSampleEvidence
@@ -91,7 +91,7 @@ mkdir -p "\$WORK_DIR"
 echo "Running GatherSampleEvidence & EvidenceQC for Sample: \$SAMPLE_ID"
 
 cd "\$WORK_DIR"
-java -jar "$CROMWELL_EXE" run "$GatherSampleEvidence_WDL" -i "\$JSON_INPUT" -p "$DEPS_ZIP"
+java -Dconfig.file="$CROMWELL_CONFIG" -jar "$CROMWELL_EXE" run "$GatherSampleEvidence_WDL" -i "\$JSON_INPUT" -p "$DEPS_ZIP"
 EOF
 
 chmod +x "$SLURM_QC_SCRIPT"
