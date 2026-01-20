@@ -65,16 +65,16 @@ EOF
 
 done < "$MANIFEST"
 
-# Submit GatherSampleEvidence & EvidenceQC as sbatch job array
-mkdir -p ${OUTPUT_DIR}/{scripts,GatherSampleEvidence,EvidenceQC}
+# Submit GatherSampleEvidence as sbatch job array
+mkdir -p ${OUTPUT_DIR}/{scripts,GatherSampleEvidence}
 
-SLURM_QC_SCRIPT="${OUTPUT_DIR}/scripts/submit_gatk_sv_array.slurm"
+SLURM_QCI_SCRIPT="${OUTPUT_DIR}/scripts/submit_gatk_sv_array.slurm"
 
-cat <<EOF > "$SLURM_QC_SCRIPT"
+cat <<EOF > "$SLURM_QCI_SCRIPT"
 #!/bin/bash
-#SBATCH --job-name=gatk_sv_qc
-#SBATCH --output=logs/gatk_sv_qc_%A_%a.out
-#SBATCH --error=logs/gatk_sv_qc_%A_%a.err
+#SBATCH --job-name=gatk_sv_qcI
+#SBATCH --output=logs/gatk_sv_qcI_%A_%a.out
+#SBATCH --error=logs/gatk_sv_qcI_%A_%a.err
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
@@ -84,25 +84,19 @@ module load java/openjdk-17.0.2
 LINE=\$(grep -vE '^SampleID|^$' "$MANIFEST" | sed -n "\${SLURM_ARRAY_TASK_ID}p")
 SAMPLE_ID=\$(echo \$LINE | awk '{print \$1}')
 
-JSON_INPUT_I="${OUTPUT_DIR}/JSON_files/GatherSampleEvidence/\${SAMPLE_ID}_GatherSampleEvidence.json"
-JSON_INPUT_II="${OUTPUT_DIR}/JSON_files/EvidenceQC/\${SAMPLE_ID}_EvidenceQC.json"
-WORK_DIR_I="${OUTPUT_DIR}/GatherSampleEvidence/\${SAMPLE_ID}"
-WORK_DIR_II="${OUTPUT_DIR}/EvidenceQC/\${SAMPLE_ID}"
-mkdir -p "\$WORK_DIR_I"
-mkdir -p "\$WORK_DIR_II"
+JSON_INPUT="${OUTPUT_DIR}/JSON_files/GatherSampleEvidence/\${SAMPLE_ID}_GatherSampleEvidence.json"
+WORK_DIR="${OUTPUT_DIR}/GatherSampleEvidence/\${SAMPLE_ID}"
+mkdir -p "\$WORK_DIR"
 
 echo "Running GatherSampleEvidence & EvidenceQC for Sample: \$SAMPLE_ID"
 
-cd "\$WORK_DIR_I"
-java -jar "$CROMWELL_EXE" run "$GatherSampleEvidence_WDL" -i "\$JSON_INPUT_I" -p "$DEPS_ZIP"
-
-cd "\$WORK_DIR_II"
-java -jar "$CROMWELL_EXE" run "$EvidenceQC_WDL" -i "\$JSON_INPUT_II" -p "$DEPS_ZIP"
+cd "\$WORK_DIR"
+java -jar "$CROMWELL_EXE" run "$GatherSampleEvidence_WDL" -i "\$JSON_INPUT" -p "$DEPS_ZIP"
 EOF
 
 chmod +x "$SLURM_QC_SCRIPT"
 
 NUM_SAMPLES=$(grep -vE '^SampleID|^$' "$MANIFEST" | wc -l)
-echo "Submitting GatherSampleEvidence & EvidenceQC array job for $NUM_SAMPLES samples..."
+echo "Submitting GatherSampleEvidence array job for $NUM_SAMPLES samples..."
 
 sbatch --array=1-$NUM_SAMPLES "$SLURM_QC_SCRIPT"
